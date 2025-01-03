@@ -98,7 +98,7 @@ class ProductosRepository{
         }
         if(ids.Count == 0){
             return 1;
-        }s
+        }
         ids.Sort();
         for(int i=1; i<=ids[^1]; i++){
             if(!ids.Contains(i)){

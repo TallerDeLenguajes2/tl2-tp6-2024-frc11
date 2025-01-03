@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\tl2-tp6-2024-frc11.props" />
+</Project>
