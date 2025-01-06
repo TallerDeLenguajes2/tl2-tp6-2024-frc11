@@ -3,12 +3,11 @@ using Microsoft.Data.Sqlite;
 class PresupuestosRepository{
     public void CrearPresupuesto(Presupuestos presupuesto){
         string connectionString= @"DataSource=Tienda.db; Cache=Shared";
-        string queryString=@"INSERT INTO Presupuestos (idPresupuesto, NombreDestinatario, FechaCreacion) VALUES (@IdPresupuesto, @nombreDestinatario, @fechaCreacion)";
+        string queryString=@"INSERT INTO Presupuestos (ClienteId, FechaCreacion) VALUES (@IdCliente, @fechaCreacion)";
         using(SqliteConnection connection=new SqliteConnection(connectionString)){
             connection.Open();
             SqliteCommand command= new SqliteCommand(queryString, connection);
-            command.Parameters.AddWithValue("@IdPresupuesto", presupuesto.IdPresupuesto);
-            command.Parameters.AddWithValue("@nombreDestinatario", presupuesto.NombreDestinatario);
+            command.Parameters.AddWithValue("@IdCliente", presupuesto.Cliente.ClienteId);
             command.Parameters.AddWithValue("@fechaCreacion", presupuesto.FechaCreacion);
             command.ExecuteNonQuery();
             connection.Close();
@@ -17,13 +16,18 @@ class PresupuestosRepository{
     public List<Presupuestos> ListarPresupuestosGuardados(){
         List<Presupuestos> presupuestos=new List<Presupuestos>();
         string connectionString=@"DataSource=Tienda.db; Cache=Shared";
-        string queryString=@"SELECT idPresupuesto, NombreDestinatario, FechaCreacion FROM Presupuestos;";
+        string queryString=@"SELECT idPresupuesto, FechaCreacion, ClienteId, Nombre, Email, Telefono FROM Presupuestos INNER JOIN Clientes USING(ClienteId);";
         using(SqliteConnection connection=new SqliteConnection(connectionString)){
             connection.Open();
             SqliteCommand command=new SqliteCommand(queryString, connection);
             using(SqliteDataReader reader=command.ExecuteReader()){
                 while(reader.Read()){
-                    Presupuestos presupuesto=new Presupuestos(Convert.ToInt32(reader["idPresupuesto"]), reader["NombreDestinatario"].ToString(), Convert.ToDateTime(reader["FechaCreacion"]));
+                    Clientes cliente = new Clientes();
+                    cliente.ClienteId=Convert.ToInt32(reader["ClienteId"]);
+                    cliente.Nombre=reader["Nombre"].ToString();
+                    cliente.Email=reader["Email"].ToString();
+                    cliente.Telefono=reader["Telefono"].ToString();
+                    Presupuestos presupuesto=new Presupuestos(Convert.ToInt32(reader["idPresupuesto"]), cliente, Convert.ToDateTime(reader["FechaCreacion"]));
                     presupuestos.Add(presupuesto);
                 }
             }
@@ -33,9 +37,10 @@ class PresupuestosRepository{
     }
      public Presupuestos ObtenerPresupuestoPorId(int id)
     {
+        ClientesRepository repo= new ClientesRepository();
         Presupuestos presupuesto = new Presupuestos();
         string connectionString = @"Data Source = Tienda.db;Cache=Shared";
-        string query = @"SELECT P.idPresupuesto, P.NombreDestinatario, P.FechaCreacion, PR.idProducto, PR.Descripcion AS Producto, PR.Precio, PD.Cantidad FROM Presupuestos P LEFT JOIN PresupuestosDetalle PD ON P.idPresupuesto = PD.idPresupuesto LEFT JOIN Productos PR ON PD.idProducto = PR.idProducto WHERE P.idPresupuesto = @id;";
+        string query = @"SELECT P.idPresupuesto, ClienteId, P.FechaCreacion, PR.idProducto, PR.Descripcion AS Producto, PR.Precio, PD.Cantidad FROM Presupuestos P LEFT JOIN PresupuestosDetalle PD ON P.idPresupuesto = PD.idPresupuesto LEFT JOIN Productos PR ON PD.idProducto = PR.idProducto WHERE P.idPresupuesto = @id;";
         using (SqliteConnection connection = new SqliteConnection(connectionString)){
             connection.Open();
             SqliteCommand command = new SqliteCommand(query, connection);
@@ -44,7 +49,8 @@ class PresupuestosRepository{
             using (SqliteDataReader reader = command.ExecuteReader()){
                 while(reader.Read()){
                     if(aux == 1){
-                        presupuesto = new Presupuestos(Convert.ToInt32(reader["idPresupuesto"]), reader["NombreDestinatario"].ToString(), Convert.ToDateTime(reader["FechaCreacion"]));
+                        Clientes cliente = repo.ObtenerClientePorId(Convert.ToInt32(reader["ClienteId"]));
+                        presupuesto = new Presupuestos(Convert.ToInt32(reader["idPresupuesto"]), cliente, Convert.ToDateTime(reader["FechaCreacion"]));
                     }
                     if(!reader.IsDBNull(reader.GetOrdinal("idProducto"))){
                         Productos producto = new Productos(Convert.ToInt32(reader["idProducto"]), reader["Producto"].ToString(), Convert.ToInt32(reader["Precio"]));
@@ -101,49 +107,6 @@ class PresupuestosRepository{
             connection.Close();
         }
     }
-    public int BuscarIdMasGrande(){
-        string connectionString=@"Data Source=Tienda.db; Cache=Shared";
-        string queryString=@"SELECT idPresupuesto FROM Presupuestos";
-        List<int> ids=new List<int>();
-        using (SqliteConnection connection=new SqliteConnection(connectionString)){
-            connection.Open();
-            SqliteCommand command=new SqliteCommand(queryString, connection);
-            using(SqliteDataReader reader=command.ExecuteReader()){
-                while(reader.Read()){
-                    ids.Add(Convert.ToInt32(reader["IdPresupuesto"]));
-                }
-            }
-            connection.Close();
-        }
-        if(ids.Count == 0){
-            return 1;
-        }
-        ids.Sort();
-        for(int i=1; i<ids[^1]; i++){
-            if(!ids.Contains(i)){
-                return i;
-            }
-        }
-        return ids[^1]+1;
-    }
-    public bool SeEncuentraProductoPorId(int id){
-        string connectionString=@"Data Source=Tienda.db; Cache=Shared";
-        string queryString=@"SELECT idProducto FROM Presupuestos INNER JOIN PresupuestosDetalle USING(idPresupuesto) WHERE idProducto=@id LIMIT 1;";
-        bool encontro;
-        using(SqliteConnection connection=new SqliteConnection(connectionString)){
-            connection.Open();
-            SqliteCommand command=new SqliteCommand(queryString, connection);
-            command.Parameters.AddWithValue("@id", id);
-            using(SqliteDataReader reader=command.ExecuteReader()){
-                if(reader.Read()){
-                    encontro= true;
-                }else{
-                    encontro= false;
-                }
-            }
-        }
-        return encontro;
-    }
     public List<PresupuestosDetalle> MostrarDetallePorId(int id){
         ProductosRepository repoProductos=new ProductosRepository();
         string connectionString=@"Data Source=Tienda.db; Cache=Shared";
@@ -186,15 +149,15 @@ class PresupuestosRepository{
             connection.Close();
         }
     }
-    public void ModificarPresupuesto(int idPresupuesto, string NombreDestinatario, DateTime fecha){
+    public void ModificarPresupuesto(Presupuestos presupuesto){
         string connectionString=@"Data Source=Tienda.db; Cache=Shared";
-        string queryString=@"UPDATE Presupuestos SET NombreDestinatario=@nombre, FechaCreacion=@fech WHERE idPresupuesto=@idPresu;";
+        string queryString=@"UPDATE Presupuestos SET ClienteId=@IdCliente, FechaCreacion=@fech WHERE idPresupuesto=@idPresu;";
         using(SqliteConnection connection=new SqliteConnection(connectionString)){
             connection.Open();
             SqliteCommand command=new SqliteCommand(queryString ,connection);
-            command.Parameters.AddWithValue("@nombre", NombreDestinatario);
-            command.Parameters.AddWithValue("@fech", fecha);
-            command.Parameters.AddWithValue("@idPresu", idPresupuesto);
+            command.Parameters.AddWithValue("@IdCliente", presupuesto.Cliente.ClienteId);
+            command.Parameters.AddWithValue("@fech", presupuesto.FechaCreacion);
+            command.Parameters.AddWithValue("@idPresu", presupuesto.IdPresupuesto);
             command.ExecuteNonQuery();
             connection.Close();
         }

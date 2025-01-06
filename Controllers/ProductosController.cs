@@ -1,55 +1,48 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc.Rendering;
+namespace Controllers;
 
-namespace Controllers
-{
-    [ApiController]
-    [Route("[controller]")]
-    public class ProductosController : Controller 
-    {
-        private readonly ILogger<ProductosController> _logger;
-        private ProductosRepository repositorioProductos;
-
-        public ProductosController(ILogger<ProductosController> logger)
-        {
-            _logger = logger;
-            repositorioProductos = new ProductosRepository();
-        }
-
-        [HttpGet]
-        public IActionResult Index()
-        {
-            var productos = repositorioProductos.ListarProductosRegistrados();
-            return View(productos);  
-        }
-
-        [HttpGet("ModificarProducto/{id}")]
-        public IActionResult ModificarProducto(int id)
-        {
-            var producto = repositorioProductos.ObtenerDetallesDeProductoPorId(id);
-            return View(producto);  
-        }
-
-        [HttpPost("ModificarProductoPorId")]
-        public IActionResult ModificarProductoPorId(Productos producto)
-        {
-            repositorioProductos.ModificarProducto(producto);
-            return RedirectToAction("Index");
-        }
-
-        [HttpGet("EliminarProducto/{id}")]
-        public IActionResult EliminarProducto(int id)
-        {
-            var producto = repositorioProductos.ObtenerDetallesDeProductoPorId(id);
-            return View(producto);  
-        }
-
-        [HttpPost("EliminarProductoPorId")]
-        public IActionResult EliminarProductoPorId(int id)
-        {
-            repositorioProductos.EliminarProductoPorId(id);
-            return RedirectToAction("Index");
-        }
+public class ProductosController : Controller{
+    private readonly ILogger<ProductosController> _logger;
+    private ProductosRepository repositorioProductos;
+    public ProductosController(ILogger<ProductosController> logger){
+        _logger=logger;
+        repositorioProductos=new ProductosRepository();
+    }
+    public IActionResult Index(){
+        return View(repositorioProductos.ListarProductosRegistrados());
+    }
+    [HttpGet]
+    public IActionResult AltaProducto(){
+        return View();
+    }
+    [HttpPost]
+    public IActionResult CrearProducto(AltaProductoViewModel productoVM){
+        if(!ModelState.IsValid) return RedirectToAction("Index");
+        var producto = new Productos(productoVM);
+        repositorioProductos.CrearNuevoProducto(producto);
+        return RedirectToAction("Index");
+    }
+    [HttpGet]
+    public IActionResult ModificarProducto(int id){
+        var producto = repositorioProductos.ObtenerDetallesDeProductoPorId(id);
+        var productoVM = new ModificarProductoViewModel(producto);
+        return View(productoVM);
+    }
+    [HttpPost]
+    public IActionResult ModificarProductoPorId(Productos producto){
+        repositorioProductos.ModificarProducto(producto);
+        return RedirectToAction("Index");
+    }
+    [HttpGet]
+    public IActionResult EliminarProducto(int id){
+        PresupuestosRepository repoPresu=new PresupuestosRepository();
+        var producto = repositorioProductos.ObtenerDetallesDeProductoPorId(id);
+        return View(producto);
+    }
+    [HttpGet]
+    public IActionResult EliminarProductoPorId(int id){
+        repositorioProductos.EliminarProductoPorId(id);
+        return RedirectToAction("Index");
     }
 }
