@@ -1,11 +1,8 @@
-using System.Collections.Generic;
-using System.Linq;
 public class Presupuestos{
     private int idPresupuesto;
     private Clientes cliente;
     private DateTime fechaCreacion;
     private List<PresupuestosDetalle> detalle;
-    public string NombreDestinatario { get; set; }
     public int IdPresupuesto { get => idPresupuesto; set => idPresupuesto=value; }
     public Clientes Cliente { get => cliente; set => cliente=value; }
     public DateTime FechaCreacion { get => fechaCreacion; set => fechaCreacion=value; }
