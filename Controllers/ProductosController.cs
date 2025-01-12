@@ -1,47 +1,99 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
+
 namespace Controllers;
 
-public class ProductosController : Controller{
+public class ProductosController : Controller
+{
     private readonly ILogger<ProductosController> _logger;
-    private IProductosRepository repositorioProductos;
-    public ProductosController(ILogger<ProductosController> logger, IProductosRepository RepositorioProductos){
-        _logger=logger;
-        repositorioProductos = RepositorioProductos;
+    private readonly IProductosRepository _repositorioProductos;
+
+    public ProductosController(ILogger<ProductosController> logger, IProductosRepository repositorioProductos)
+    {
+        _logger = logger;
+        _repositorioProductos = repositorioProductos;
     }
-    public IActionResult Index(){
-        return View(repositorioProductos.ListarProductosRegistrados());
+
+    public IActionResult Index()
+    {
+        var productos = _repositorioProductos.ListarProductosRegistrados();
+        return View(productos);
     }
+
     [HttpGet]
-    public IActionResult AltaProducto(){
+    public IActionResult CrearProducto()
+    {
         return View();
     }
+
     [HttpPost]
-    public IActionResult CrearProducto(AltaProductoViewModel productoVM){
-        if(!ModelState.IsValid) return RedirectToAction("Index");
+    public IActionResult ConfirmarCreacionProducto(AltaProductoViewModel productoVM)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "El modelo del producto no es válido.";
+            return View("CrearProducto", productoVM);
+        }
+
         var producto = new Productos(productoVM);
-        repositorioProductos.CrearNuevoProducto(producto);
+        _repositorioProductos.CrearNuevoProducto(producto);
+        TempData["Exito"] = "Producto creado exitosamente.";
         return RedirectToAction("Index");
     }
+
     [HttpGet]
-    public IActionResult ModificarProducto(int id){
-        var producto = repositorioProductos.ObtenerDetallesDeProductoPorId(id);
+    public IActionResult EditarProducto(int id)
+    {
+        var producto = _repositorioProductos.ObtenerDetallesDeProductoPorId(id);
+        if (producto == null)
+        {
+            TempData["Error"] = "Producto no encontrado.";
+            return RedirectToAction("Index");
+        }
+
         var productoVM = new ModificarProductoViewModel(producto);
         return View(productoVM);
     }
+
     [HttpPost]
-    public IActionResult ModificarProductoPorId(Productos producto){
-        repositorioProductos.ModificarProducto(producto);
+    public IActionResult ConfirmarEdicionProducto(ModificarProductoViewModel productoVM)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "El modelo del producto no es válido.";
+            return View("EditarProducto", productoVM);
+        }
+
+        var producto = new Productos(productoVM);
+        _repositorioProductos.ModificarProducto(producto);
+        TempData["Exito"] = "Producto modificado exitosamente.";
         return RedirectToAction("Index");
     }
+
     [HttpGet]
-    public IActionResult EliminarProducto(int id){
-        var producto = repositorioProductos.ObtenerDetallesDeProductoPorId(id);
+    public IActionResult DetalleEliminarProducto(int id)
+    {
+        var producto = _repositorioProductos.ObtenerDetallesDeProductoPorId(id);
+        if (producto == null)
+        {
+            TempData["Error"] = "Producto no encontrado.";
+            return RedirectToAction("Index");
+        }
+
         return View(producto);
     }
-    [HttpGet]
-    public IActionResult EliminarProductoPorId(int id){
-        repositorioProductos.EliminarProductoPorId(id);
+
+    [HttpPost]
+    public IActionResult ConfirmarEliminacionProducto(int id)
+    {
+        var producto = _repositorioProductos.ObtenerDetallesDeProductoPorId(id);
+        if (producto == null)
+        {
+            TempData["Error"] = "Producto no encontrado.";
+            return RedirectToAction("Index");
+        }
+
+        _repositorioProductos.EliminarProductoPorId(id);
+        TempData["Exito"] = "Producto eliminado exitosamente.";
         return RedirectToAction("Index");
     }
 }

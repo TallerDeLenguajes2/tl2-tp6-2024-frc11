@@ -1,103 +1,137 @@
 using System.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+
 namespace Controllers;
-public class PresupuestosController : Controller{
-    private readonly ILogger<PresupuestosController> _logger;
-    private IPresupuestosRepository repositorioPresupuestos;
-    private IClientesRepository repositorioClientes;
-    private IProductosRepository repositorioProductos;
-    public PresupuestosController(ILogger<PresupuestosController> logger, IPresupuestosRepository RepositorioPresupuestos, IClientesRepository RepositorioClientes, IProductosRepository RepositorioProductos){
-        _logger=logger;
-        repositorioPresupuestos = RepositorioPresupuestos;
-        repositorioClientes = RepositorioClientes;
-        repositorioProductos = RepositorioProductos;
+
+public class PresupuestosController : Controller
+{
+    private readonly ILogger<PresupuestosController> _log;
+    private readonly IPresupuestosRepository _repositorioPresupuestos;
+    private readonly IClientesRepository _repositorioClientes;
+    private readonly IProductosRepository _repositorioProductos;
+
+    public PresupuestosController(ILogger<PresupuestosController> log, IPresupuestosRepository presupuestosRepo, IClientesRepository clientesRepo, IProductosRepository productosRepo)
+    {
+        _log = log;
+        _repositorioPresupuestos = presupuestosRepo;
+        _repositorioClientes = clientesRepo;
+        _repositorioProductos = productosRepo;
     }
-    public IActionResult Index(){
-        return View(repositorioPresupuestos.ListarPresupuestosGuardados());
+
+    public IActionResult Index()
+    {
+        return View(_repositorioPresupuestos.ListarPresupuestosGuardados());
     }
+
     [HttpGet]
-    public IActionResult AltaPresupuesto(){
-        List<Clientes> clientes = repositorioClientes.ListarClientesGuardados();
-        ViewData["clientes"] = clientes.Select(c=> new SelectListItem
+    public IActionResult NuevoPresupuesto()
+    {
+        var clientes = _repositorioClientes.ListarClientesGuardados();
+        ViewData["Clientes"] = clientes.Select(c => new SelectListItem
         {
-            Value = c.ClienteId.ToString(), 
+            Value = c.ClienteId.ToString(),
             Text = c.Nombre
         }).ToList();
         return View();
     }
+
     [HttpPost]
-    public IActionResult CrearPresupuesto(AltaPresupuestoViewModel presupuestoVM){
-        if(!ModelState.IsValid) return RedirectToAction ("Index");
+    public IActionResult CrearNuevoPresupuesto(AltaPresupuestoViewModel presupuestoVM)
+    {
+        if (!ModelState.IsValid) return RedirectToAction("Index");
         var presupuesto = new Presupuestos(presupuestoVM);
-        repositorioPresupuestos.CrearPresupuesto(presupuesto);
+        _repositorioPresupuestos.CrearPresupuesto(presupuesto);
         return RedirectToAction("Index");
     }
+
     [HttpGet]
-    public IActionResult AgregarProductosAPresupuesto(int id){
-        List<Productos> productos = repositorioProductos.ListarProductosRegistrados();
-        ViewData["Productos"]=productos.Select(p => new SelectListItem
+    public IActionResult AgregarProductoAPresupuesto(int idPresupuesto)
+    {
+        var productos = _repositorioProductos.ListarProductosRegistrados();
+        ViewData["Productos"] = productos.Select(p => new SelectListItem
         {
-            Value = p.IdProducto.ToString(), 
-            Text = p.Descripcion 
+            Value = p.IdProducto.ToString(),
+            Text = p.Descripcion
         }).ToList();
-        var model = new AgregarProductosAPresupuestoViewModel();
-        model.IdPresupuesto=id;
-        return View(model);
+        var modelo = new AgregarProductosAPresupuestoViewModel { IdPresupuesto = idPresupuesto };
+        return View(modelo);
     }
+
     [HttpPost]
-    public IActionResult AgregarLosProductos(AgregarProductosAPresupuestoViewModel productos){
-        if(!ModelState.IsValid) return RedirectToAction("Index");
-        repositorioPresupuestos.AgregarProducto(productos.IdPresupuesto, productos.IdProducto, productos.Cantidad);
+    public IActionResult ConfirmarAgregarProductos(AgregarProductosAPresupuestoViewModel productosVM)
+    {
+        if (!ModelState.IsValid) return RedirectToAction("Index");
+        _repositorioPresupuestos.AgregarProducto(productosVM.IdPresupuesto, productosVM.IdProducto, productosVM.Cantidad);
         return RedirectToAction("Index");
     }
+
     [HttpGet]
-    public IActionResult EliminarProductosDePresupuesto(int id){
-        List<PresupuestosDetalle> detalles=repositorioPresupuestos.MostrarDetallePorId(id);
-        ViewData["PresupuestosDetalle"]=detalles;
-        return View(id);
+    public IActionResult QuitarProductosDePresupuesto(int idPresupuesto)
+    {
+        var detalle = _repositorioPresupuestos.MostrarDetallePorId(idPresupuesto);
+        ViewData["DetallePresupuesto"] = detalle;
+        return View(idPresupuesto);
     }
+
     [HttpPost]
-    public IActionResult EliminarProductos(int idPresupuesto, List<int> idsProductos, List<int> cantidadesVieja, List<int> cantidadesNueva){
-        for(int i=0; i<idsProductos.Count; i++){
-            if(cantidadesVieja[i]>cantidadesNueva[i]){
-                repositorioPresupuestos.EliminarProducto(idPresupuesto, idsProductos[i], cantidadesVieja[i], cantidadesNueva[i]);
+    public IActionResult ConfirmarEliminacionProductos(int idPresupuesto, List<int> idsProductos, List<int> cantidadesAnteriores, List<int> nuevasCantidades)
+    {
+        for (int i = 0; i < idsProductos.Count; i++)
+        {
+            if (cantidadesAnteriores[i] > nuevasCantidades[i])
+            {
+                _repositorioPresupuestos.EliminarProducto(idPresupuesto, idsProductos[i], cantidadesAnteriores[i], nuevasCantidades[i]);
             }
         }
         return RedirectToAction("Index");
     }
-    public IActionResult MostrarPresupuesto(int id){
-        Presupuestos? presupuesto=repositorioPresupuestos.ObtenerPresupuestoPorId(id);
+
+    public IActionResult VerPresupuesto(int idPresupuesto)
+    {
+        var presupuesto = _repositorioPresupuestos.ObtenerPresupuestoPorId(idPresupuesto);
         return View(presupuesto);
     }
+
     [HttpGet]
-    public IActionResult ModificarPresupuesto(int id){
-        List<Clientes> Clientes = repositorioClientes.ListarClientesGuardados();
-        ViewData["Clientes"] =  Clientes.Select(c=> new SelectListItem
+    public IActionResult EditarPresupuesto(int idPresupuesto)
+    {
+        var clientes = _repositorioClientes.ListarClientesGuardados();
+        ViewData["Clientes"] = clientes.Select(c => new SelectListItem
         {
-            Value = c.ClienteId.ToString(), 
+            Value = c.ClienteId.ToString(),
             Text = c.Nombre
         }).ToList();
-        var presupuesto  = repositorioPresupuestos.ObtenerPresupuestoPorId(id);
-        var presupuestoVM = new ModificarPresupuestoViewModel();
-        presupuestoVM.IdPresupuesto = id;
-        presupuestoVM.FechaCreacion = presupuesto.FechaCreacion;
-        return View(presupuestoVM);
+
+        var presupuesto = _repositorioPresupuestos.ObtenerPresupuestoPorId(idPresupuesto);
+        var modelo = new ModificarPresupuestoViewModel
+        {
+            IdPresupuesto = idPresupuesto,
+            FechaCreacion = presupuesto.FechaCreacion
+        };
+        return View(modelo);
     }
+
     [HttpPost]
-    public IActionResult ModificarElPresupuesto(ModificarPresupuestoViewModel presupuestoVM){
-        if(!ModelState.IsValid) return RedirectToAction("Index");
+    public IActionResult ConfirmarEdicionPresupuesto(ModificarPresupuestoViewModel presupuestoVM)
+    {
+        if (!ModelState.IsValid) return RedirectToAction("Index");
         var presupuesto = new Presupuestos(presupuestoVM);
-        repositorioPresupuestos.ModificarPresupuesto(presupuesto);
+        _repositorioPresupuestos.ModificarPresupuesto(presupuesto);
         return RedirectToAction("Index");
     }
+
     [HttpGet]
-    public IActionResult EliminarPresupuesto(int id){
-        return View(repositorioPresupuestos.ObtenerPresupuestoPorId(id));
+    public IActionResult EliminarPresupuesto(int idPresupuesto)
+    {
+        var presupuesto = _repositorioPresupuestos.ObtenerPresupuestoPorId(idPresupuesto);
+        return View(presupuesto);
     }
+
     [HttpGet]
-    public IActionResult EliminarElPresupuesto(int id){
-        repositorioPresupuestos.EliminarPresupuestoPorId(id);
+    public IActionResult ConfirmarEliminacionPresupuesto(int idPresupuesto)
+    {
+        _repositorioPresupuestos.EliminarPresupuestoPorId(idPresupuesto);
         return RedirectToAction("Index");
     }
 }

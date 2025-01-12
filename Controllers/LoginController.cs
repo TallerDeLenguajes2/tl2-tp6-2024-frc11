@@ -1,34 +1,48 @@
 using Microsoft.AspNetCore.Mvc;
 
-public class LoginController : Controller{
-    private readonly IUsuariosRepository _usuariosRepository;
-    private readonly ILogger<LoginController> _logger;
-    public LoginController(IUsuariosRepository usuariosRepository){
-        _usuariosRepository = usuariosRepository;
+public class LoginController : Controller
+{
+    private readonly IUsuariosRepository _repositorioUsuarios;
+    private readonly ILogger<LoginController> _log;
+
+    public LoginController(IUsuariosRepository repositorioUsuarios)
+    {
+        _repositorioUsuarios = repositorioUsuarios;
     }
-    public IActionResult Index(){
-        var model = new LoginViewModel{
+
+    public IActionResult Index()
+    {
+        var modelo = new LoginViewModel
+        {
             Autenticado = HttpContext.Session.GetString("Autenticado") == "true"
         };
-        return View(model);
+        return View(modelo);
     }
-    public IActionResult Login(LoginViewModel model){
-        if(string.IsNullOrEmpty(model.Usuario) || string.IsNullOrEmpty(model.Contraseña)){
-            model.Error = "Por favor ingreas usuario y contraseña";
-            return View("Index", model);
+
+    public IActionResult IniciarSesion(LoginViewModel modelo)
+    {
+        if (string.IsNullOrWhiteSpace(modelo.Usuario) || string.IsNullOrWhiteSpace(modelo.Contraseña))
+        {
+            modelo.Error = "Por favor, ingrese usuario y contraseña.";
+            return View("Index", modelo);
         }
-        Usuarios usuario = _usuariosRepository.GetUsuarios(model.Usuario, model.Contraseña);
-        if(usuario != null){
+
+        var usuarioEncontrado = _repositorioUsuarios.GetUsuarios(modelo.Usuario, modelo.Contraseña);
+        if (usuarioEncontrado != null)
+        {
             HttpContext.Session.SetString("Autenticado", "true");
-            HttpContext.Session.SetString("Usuario", usuario.Usuario);
-            HttpContext.Session.SetString("Rol", usuario.Rol.ToString());
+            HttpContext.Session.SetString("Usuario", usuarioEncontrado.Usuario);
+            HttpContext.Session.SetString("Rol", usuarioEncontrado.Rol.ToString());
             return RedirectToAction("Index", "Presupuestos");
         }
-        model.Error = "Usuario o contraseña incorrectos";
-        model.Autenticado = false;
-        return View("Index", model);
+
+        modelo.Error = "Usuario o contraseña incorrectos.";
+        modelo.Autenticado = false;
+        return View("Index", modelo);
     }
-    public IActionResult Logout(){
+
+    public IActionResult CerrarSesion()
+    {
         HttpContext.Session.Clear();
         return RedirectToAction("Index");
     }

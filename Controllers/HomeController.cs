@@ -6,11 +6,11 @@ namespace tl2_tp6_2024_frc11.Controllers;
 
 public class HomeController : Controller
 {
-    private readonly ILogger<HomeController> _logger;
+    private readonly ILogger<HomeController> _log;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> log)
     {
-        _logger = logger;
+        _log = log;
     }
 
     public IActionResult Index()
@@ -18,14 +18,15 @@ public class HomeController : Controller
         return View();
     }
 
-    public IActionResult Privacy()
+    public IActionResult PoliticaPrivacidad()
     {
-        return View();
+        return View("Privacy");
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
+    public IActionResult MostrarError()
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        var modeloError = new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier };
+        return View("Error", modeloError);
     }
 }
