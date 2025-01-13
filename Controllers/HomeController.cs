@@ -1,32 +1,30 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using tl2_tp6_2024_frc11.Models;
-
-namespace tl2_tp6_2024_frc11.Controllers;
-
 public class HomeController : Controller
 {
-    private readonly ILogger<HomeController> _log;
+    private readonly ILogger<HomeController> _logger;
 
-    public HomeController(ILogger<HomeController> log)
+    public HomeController(ILogger<HomeController> logger)
     {
-        _log = log;
+        _logger = logger;
     }
 
     public IActionResult Index()
     {
+        if (string.IsNullOrEmpty(HttpContext.Session.GetString("usuario"))) return RedirectToAction ("Index", "Login");
         return View();
     }
 
-    public IActionResult PoliticaPrivacidad()
+    public IActionResult Privacy()
     {
-        return View("Privacy");
+        if (string.IsNullOrEmpty(HttpContext.Session.GetString("User"))) return RedirectToAction ("Index", "Login");
+        return View();
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult MostrarError()
+    public IActionResult Error()
     {
-        var modeloError = new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier };
-        return View("Error", modeloError);
+        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
     }
 }

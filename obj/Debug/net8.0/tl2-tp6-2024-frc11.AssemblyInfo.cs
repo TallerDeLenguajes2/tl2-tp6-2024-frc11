@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("tl2-tp6-2024-frc11")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8726807efcfc3a746e9093d177c6a36a19f6c3e0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+51f7bbe0c86c7d7f4b5e26b3293fcb5f97bbf969")]
 [assembly: System.Reflection.AssemblyProductAttribute("tl2-tp6-2024-frc11")]
 [assembly: System.Reflection.AssemblyTitleAttribute("tl2-tp6-2024-frc11")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
